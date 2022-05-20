@@ -3,7 +3,6 @@ package outbound
 import (
 	"bufio"
 	"context"
-	"crypto/tls"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -15,6 +14,7 @@ import (
 
 	"github.com/Dreamacro/clash/component/dialer"
 	C "github.com/Dreamacro/clash/constant"
+	tls "github.com/refraction-networking/utls"
 )
 
 type Http struct {
@@ -39,7 +39,8 @@ type HttpOption struct {
 // StreamConn implements C.ProxyAdapter
 func (h *Http) StreamConn(c net.Conn, metadata *C.Metadata) (net.Conn, error) {
 	if h.tlsConfig != nil {
-		cc := tls.Client(c, h.tlsConfig)
+// 		cc := tls.Client(c, h.tlsConfig)
+		cc:=  tls.UClient(c, h.tlsConfig, tls.HelloChrome_Auto)
 		err := cc.Handshake()
 		c = cc
 		if err != nil {
