@@ -39,8 +39,8 @@ type HttpOption struct {
 // StreamConn implements C.ProxyAdapter
 func (h *Http) StreamConn(c net.Conn, metadata *C.Metadata) (net.Conn, error) {
 	if h.tlsConfig != nil {
-// 		cc := tls.Client(c, h.tlsConfig)
-		cc:=  tls.UClient(c, h.tlsConfig, tls.HelloChrome_Auto)
+		configCopy := h.tlsConfig
+		cc:=  tls.UClient(c, configCopy, tls.HelloChrome_Auto)
 		err := cc.Handshake()
 		c = cc
 		if err != nil {
