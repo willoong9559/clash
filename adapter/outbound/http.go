@@ -22,18 +22,20 @@ type Http struct {
 	user      string
 	pass      string
 	tlsConfig *tls.Config
+	option    *HttpOption
 }
 
 type HttpOption struct {
 	BasicOption
-	Name           string `proxy:"name"`
-	Server         string `proxy:"server"`
-	Port           int    `proxy:"port"`
-	UserName       string `proxy:"username,omitempty"`
-	Password       string `proxy:"password,omitempty"`
-	TLS            bool   `proxy:"tls,omitempty"`
-	SNI            string `proxy:"sni,omitempty"`
-	SkipCertVerify bool   `proxy:"skip-cert-verify,omitempty"`
+	Name           string            `proxy:"name"`
+	Server         string            `proxy:"server"`
+	Port           int               `proxy:"port"`
+	UserName       string            `proxy:"username,omitempty"`
+	Password       string            `proxy:"password,omitempty"`
+	TLS            bool              `proxy:"tls,omitempty"`
+	SNI            string            `proxy:"sni,omitempty"`
+	SkipCertVerify bool              `proxy:"skip-cert-verify,omitempty"`
+	Headers        map[string]string `proxy:"headers,omitempty"`
 }
 
 // StreamConn implements C.ProxyAdapter
@@ -85,6 +87,13 @@ func (h *Http) shakeHand(metadata *C.Metadata, rw io.ReadWriter) error {
 		},
 	}
 
+	//增加headers
+	if len(h.option.Headers) != 0 {
+		for key, value := range h.option.Headers {
+			req.Header.Add(key, value)
+		}
+	}
+	
 	if h.user != "" && h.pass != "" {
 		auth := h.user + ":" + h.pass
 		req.Header.Add("Proxy-Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(auth)))
@@ -142,5 +151,6 @@ func NewHttp(option HttpOption) *Http {
 		user:      option.UserName,
 		pass:      option.Password,
 		tlsConfig: tlsConfig,
+		option:    &option,
 	}
 }
