@@ -3,6 +3,7 @@ package outbound
 import (
 	"bufio"
 	"context"
+	"crypto/tls"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -14,7 +15,7 @@ import (
 
 	"github.com/Dreamacro/clash/component/dialer"
 	C "github.com/Dreamacro/clash/constant"
-	tls "github.com/refraction-networking/utls"
+	utls "github.com/refraction-networking/utls"
 )
 
 type Http struct {
@@ -22,6 +23,7 @@ type Http struct {
 	user      string
 	pass      string
 	tlsConfig *tls.Config
+	uTlsConfig utls.Config
 	option    *HttpOption
 }
 
@@ -41,8 +43,8 @@ type HttpOption struct {
 // StreamConn implements C.ProxyAdapter
 func (h *Http) StreamConn(c net.Conn, metadata *C.Metadata) (net.Conn, error) {
 	if h.tlsConfig != nil {
-		configCopy := h.tlsConfig
-		cc:=  tls.UClient(c, configCopy, tls.HelloChrome_Auto)
+		configCopy := h.uTlsConfig
+		cc := utls.UClient(c, &configCopy, utls.HelloChrome_Auto)
 		err := cc.Handshake()
 		c = cc
 		if err != nil {
@@ -129,12 +131,17 @@ func (h *Http) shakeHand(metadata *C.Metadata, rw io.ReadWriter) error {
 
 func NewHttp(option HttpOption) *Http {
 	var tlsConfig *tls.Config
+	var uTlsConfig utls.Config
 	if option.TLS {
 		sni := option.Server
 		if option.SNI != "" {
 			sni = option.SNI
 		}
 		tlsConfig = &tls.Config{
+			InsecureSkipVerify: option.SkipCertVerify,
+			ServerName:         sni,
+		}
+		uTlsConfig = utls.Config{
 			InsecureSkipVerify: option.SkipCertVerify,
 			ServerName:         sni,
 		}
@@ -151,6 +158,7 @@ func NewHttp(option HttpOption) *Http {
 		user:      option.UserName,
 		pass:      option.Password,
 		tlsConfig: tlsConfig,
+		uTlsConfig: uTlsConfig,
 		option:    &option,
 	}
 }
